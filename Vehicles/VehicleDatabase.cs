@@ -1,10 +1,12 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Reflection;
 
 namespace Vehicles;
 
 public class VehicleDatabase
 {
     private List<List<Vehicle>> _vehicles;
+    private Dictionary<string, List<Vehicle>> _registrations;
 
     public VehicleDatabase()
     {
@@ -22,7 +24,7 @@ public class VehicleDatabase
     private void Load(string csvPath)
     {
         var lines = File.ReadAllLines(csvPath);
-        var vehicles = new Dictionary<string, List<Vehicle>>();
+        _registrations = new Dictionary<string, List<Vehicle>>();
 
         foreach (string row in lines.Skip(1))
         {
@@ -35,21 +37,39 @@ public class VehicleDatabase
             string make = columns[6];
             string model = columns[7];
             string evType = columns[8];
+            string cAFVEligibility = columns[9];
             int evRange = int.Parse(columns[10]);
-            var entry = new Vehicle { Id = id, State = state, City = city, County = county, Make = make, Model = model, ModelYear = modelYear, EvType = evType, EvRange = evRange };
 
-            if (!vehicles.ContainsKey(id))
+            var entry = new Vehicle
             {
-                vehicles[id] = new List<Vehicle>();
+                Id = id,
+                State = state,
+                City = city,
+                County = county,
+                Make = make,
+                Model = model,
+                ModelYear = modelYear,
+                EvType = evType,
+                CAFVEligibility = cAFVEligibility,
+                EvRange = evRange
+            };
+
+            if (!_registrations.ContainsKey(id))
+            {
+                _registrations[id] = new List<Vehicle>();
             }
 
-            vehicles[id].Add(entry);
+            _registrations[id].Add(entry);
         }
 
-        _vehicles = vehicles.Select(x => x.Value).ToList();
+        _vehicles = _registrations.Select(x => x.Value).ToList();
     }
 
     public List<List<Vehicle>> GetRegistrations() => _vehicles;
 
     public IEnumerable<Vehicle> GetVehicles() => _vehicles.Select(x => x[0]);
+
+    public bool CheckVehicleIsUsed(string id) => _registrations.ContainsKey(id) ? _registrations[id].Count > 1 : false;
+
+    public void AddRegistration(List<Vehicle> vehicles) => _registrations.Add(vehicles[0].Id, vehicles);
 }
